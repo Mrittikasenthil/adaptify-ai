@@ -10,7 +10,7 @@ load_dotenv(BASE_DIR / ".env")
 
 # Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-SECRET_KEY = os.getenv("SECRET_KEY", "brandflow-ai-super-secret-key-2026-production")
+SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
