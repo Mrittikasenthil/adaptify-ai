@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #F8F7FF;
+    --bg-secondary: #FFFFFF;
+    --card-bg: rgba(255, 255, 255, 0.92);
+    --border-color: rgba(139, 92, 246, 0.14);
+    --text-primary: #1E1B4B;
+    --text-secondary: #64748B;
+  }
+
+  .dark {
+    --bg-primary: #0B0E1B;
+    --bg-secondary: #121829;
+    --card-bg: rgba(18, 24, 41, 0.85);
+    --border-color: rgba(255, 255, 255, 0.09);
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+/* Lavender Gradient Mesh Backgrounds */
+.bg-mesh-lavender {
+  background-color: #F8F7FF;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(196, 181, 253, 0.25) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(165, 180, 252, 0.22) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(221, 214, 254, 0.28) 0px, transparent 60%);
+}
+
+.dark .bg-mesh-lavender {
+  background-color: #0A0D18;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 60%);
+}
+
+/* Card Glow Effect */
+.card-soft-shadow {
+  box-shadow: 0 4px 24px -2px rgba(124, 58, 237, 0.07), 0 2px 8px -2px rgba(99, 102, 241, 0.05);
+}
+
+.card-hover-glow:hover {
+  box-shadow: 0 10px 30px -4px rgba(124, 58, 237, 0.15), 0 4px 12px -2px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Animated Sound Wave Bars */
+@keyframes soundwave {
+  0%, 100% { height: 6px; }
+  50% { height: 26px; }
+}
+
+.soundwave-bar {
+  animation: soundwave 1.2s ease-in-out infinite;
+}
+.soundwave-bar:nth-child(2) { animation-delay: 0.15s; }
+.soundwave-bar:nth-child(3) { animation-delay: 0.3s; }
+.soundwave-bar:nth-child(4) { animation-delay: 0.45s; }
+.soundwave-bar:nth-child(5) { animation-delay: 0.2s; }
+.soundwave-bar:nth-child(6) { animation-delay: 0.35s; }
+.soundwave-bar:nth-child(7) { animation-delay: 0.1s; }
+
+/* Pulse animation for voice status */
+@keyframes mic-pulse {
+  0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5); }
+  70% { transform: scale(1.04); box-shadow: 0 0 0 16px rgba(124, 58, 237, 0); }
+  100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.animate-mic-pulse {
+  animation: mic-pulse 2s infinite;
+}
