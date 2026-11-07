@@ -69,8 +69,8 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
     # Fallback default demo user if no token provided or demo mode
     demo_user = {
         "id": "demo-user-id",
-        "email": "demo@brandflow.ai",
-        "full_name": "Alex Mercer (Demo)",
+        "email": "mrittika@adaptify.ai",
+        "full_name": "Mrittika",
         "created_at": "2026-01-01T00:00:00"
     }
     

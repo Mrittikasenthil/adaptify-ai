@@ -347,15 +347,289 @@ def detect_subject_key(text: str, filename: str = "") -> str:
         return "dsa"
     return "general"
 
+def is_sample_material(content: str, title: str) -> Optional[str]:
+    combined = (content[:500] + " " + title).lower()
+    if "quantum wave mechanics" in combined or "quantum mechanics revolutionizes" in combined:
+        return "quantum"
+    if "cpu scheduling & deadlocks" in combined or "process management lies at the core" in combined:
+        return "os"
+    if "trees, graphs & dijkstra" in combined or "advanced data structures enable efficient" in combined:
+        return "dsa"
+    return None
+
+def extract_terms_from_text(text: str, title: str = "Study Topic") -> List[str]:
+    candidates = []
+    # 1. Terms before colon
+    for m in re.finditer(r'(?:^|\n)\s*([A-Za-z0-9_\-\s]{2,30}):\s*', text):
+        term = m.group(1).strip()
+        if len(term) > 2 and term not in candidates and not term.lower().startswith("http"):
+            candidates.append(term)
+    # 2. Terms before is/are/refers to/means/defined as
+    for m in re.finditer(r'([A-Za-z0-9_\-\s]{2,30})\s+(?:is|are|refers to|means|defined as)\b', text, re.IGNORECASE):
+        term = m.group(1).strip().split('\n')[-1].strip()
+        words = term.split()
+        if len(words) > 3:
+            term = ' '.join(words[-3:])
+        if len(term) > 2 and term not in candidates and not term.lower().startswith("http"):
+            candidates.append(term)
+    # 3. Capitalized technical terms
+    for w in re.findall(r'\b[A-Z][a-zA-Z0-9_\-]{3,}\b', text):
+        if w not in candidates and w not in ["This", "That", "These", "Those", "With", "From", "Here", "There", "When", "What", "Which"]:
+            candidates.append(w)
+            
+    words = [w for w in title.split() if len(w) > 3]
+    for w in words:
+        if w not in candidates:
+            candidates.append(w)
+            
+    while len(candidates) < 5:
+        candidates.append(f"{title} Concept {len(candidates)+1}")
+        
+    return candidates[:6]
+
+def generate_dynamic_notes_from_text(content: str, title: str = "Study Material", complexity: str = "Exam-focused") -> Dict[str, Any]:
+    """
+    Dynamically generates structured 12-part study notes from ANY uploaded text, PDF, video transcript, or document.
+    """
+    raw = content.strip() if content else ""
+    if len(raw) < 20:
+        raw = f"{title} covers foundational principles, core structures, working algorithms, and key exam preparation topics."
+
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', raw) if len(s.strip()) > 15]
+    if not sentences:
+        sentences = [raw]
+    while len(sentences) < 6:
+        sentences.append(f"Essential exam principle: Study the foundational mechanisms and definitions of {title}.")
+
+    paragraphs = [p.strip() for p in raw.split("\n\n") if len(p.strip()) > 30]
+    if not paragraphs:
+        paragraphs = [raw]
+
+    terms = extract_terms_from_text(raw, title)
+
+    summary_lead = f"This comprehensive study module explores '{title}'. It covers foundational definitions, key mechanisms, practical considerations, and exam-focused takeaways as outlined in the learning resource."
+    summary_body = " ".join(sentences[:4])
+    if len(sentences) > 4:
+        summary_body += "\n\n" + " ".join(sentences[4:8])
+    chapter_summary = f"{summary_lead}\n\n{summary_body}"
+
+    key_points = []
+    step = max(1, len(sentences) // 8)
+    for i in range(0, min(len(sentences), 8 * step), step):
+        if len(key_points) < 8 and sentences[i] not in key_points:
+            key_points.append(sentences[i])
+    while len(key_points) < 6:
+        key_points.append(f"Focus on the primary definitions and operational rules of {terms[len(key_points) % len(terms)]}.")
+
+    simple_explanation = (
+        f"🌟 To easily understand **{title}**, think of it as an interconnected system. "
+        f"Instead of getting overwhelmed by dense technical terminology, focus on the core workflow: "
+        f"{terms[0]} provides the foundational inputs, which are processed through {terms[1] if len(terms) > 1 else 'established rules'}, "
+        f"ultimately producing the reliable outcomes required in university exams. "
+        f"Master the relationship between these key components first, and all questions will become straightforward!"
+    )
+    if complexity in ["Beginner", "5-Year Old"]:
+        simple_explanation = "🌟 Imagine this like your favorite playground! " + simple_explanation
+    elif complexity == "Professor Depth":
+        simple_explanation = "From a formal axiomatic and analytical perspective: " + chapter_summary[:250] + "..."
+
+    definitions = []
+    for i, term in enumerate(terms[:5]):
+        def_sent = sentences[i % len(sentences)]
+        definitions.append({
+            "term": term,
+            "definition": def_sent
+        })
+
+    formulas = []
+    eq_matches = re.findall(r'([A-Za-z0-9_]{1,15}\s*=\s*[^;\n.]{3,35})', raw)
+    if eq_matches:
+        for i, eq in enumerate(eq_matches[:4]):
+            formulas.append({
+                "name": f"{title} Equation {i+1}",
+                "formula": eq.strip(),
+                "description": f"Mathematical relationship governing {terms[i % len(terms)]}."
+            })
+    while len(formulas) < 3:
+        idx = len(formulas)
+        formulas.append({
+            "name": f"{title} Rule {idx+1}",
+            "formula": f"{terms[idx % len(terms)]} -> Principle of Optimal Operation",
+            "description": f"Fundamental governing constraint: {sentences[idx % len(sentences)][:80]}"
+        })
+
+    examples = [
+        {
+            "title": f"Practical Application: {title}",
+            "problem": f"Explain how to analyze and solve an exam scenario involving '{terms[0]}'.",
+            "solution": f"Step 1: Identify given parameters and boundary conditions.\nStep 2: Apply the governing rule: '{sentences[0][:100]}'.\nStep 3: Verify the output against standard theoretical expectations.\nResult: The analysis confirms expected performance parameters."
+        }
+    ]
+
+    diagrams = [
+        {
+            "title": f"{title} — Structural Workflow Diagram",
+            "type": "svg_and_ascii",
+            "ascii_art": (
+                f"+--------------------------------------------------+\n"
+                f"|            {title[:36]}                     |\n"
+                f"+-------------------------+------------------------+\n"
+                f"                          |\n"
+                f"                          v\n"
+                f"    [ {terms[0][:18]} ] ---> [ {terms[1][:18]} ]\n"
+                f"                          |\n"
+                f"                          v\n"
+                f"+--------------------------------------------------+\n"
+                f"|        Verified Result & Exam Mastery            |\n"
+                f"+--------------------------------------------------+"
+            ),
+            "description": f"High-level interaction architecture showing the operational relationship between {terms[0]} and {terms[1]}."
+        }
+    ]
+
+    two_mark_qa = [
+        {"q": f"Define {terms[0]} and state its primary significance.", "a": sentences[0]},
+        {"q": f"State two key characteristics or principles of {terms[1]}.", "a": sentences[1 % len(sentences)]},
+        {"q": f"What is the primary role or mechanism of {terms[2]}?", "a": sentences[2 % len(sentences)]},
+        {"q": f"State one key observation or exam rule concerning {title}.", "a": sentences[3 % len(sentences)]}
+    ]
+
+    five_mark_qa = [
+        {
+            "q": f"Explain the architectural working and core mechanisms of {title}.",
+            "a": f"1. Foundation: {sentences[0]}\n2. Operational Flow: {sentences[1 % len(sentences)]}\n3. Analysis: {sentences[2 % len(sentences)]}\n4. Conclusion: Consistent application ensures high performance and accuracy."
+        },
+        {
+            "q": f"Discuss the key trade-offs and critical factors in {terms[0]}.",
+            "a": f"In university exam evaluation, {terms[0]} is evaluated based on robustness and efficiency. Specifically, '{sentences[3 % len(sentences)]}'. Paying close attention to these constraints ensures full credit."
+        }
+    ]
+
+    sixteen_mark_qa = [
+        {
+            "q": f"Discuss in detail the foundational theory, working mechanisms, structural components, and practical applications of {title}.",
+            "a": (
+                f"### 1. Introduction & Theoretical Background\n"
+                f"{chapter_summary[:300]}...\n\n"
+                f"### 2. Core Concepts & Definitions\n"
+                f"- **{terms[0]}**: {sentences[0]}\n"
+                f"- **{terms[1]}**: {sentences[1 % len(sentences)]}\n"
+                f"- **{terms[2]}**: {sentences[2 % len(sentences)]}\n\n"
+                f"### 3. Step-by-Step Working & Methodology\n"
+                f"1. **Initialization**: The system establishes baseline operational parameters.\n"
+                f"2. **Processing Phase**: '{sentences[min(3, len(sentences)-1)]}'\n"
+                f"3. **Verification**: Constraints and bounds are evaluated systematically.\n\n"
+                f"### 4. Practical Implementation & Real-World Context\n"
+                f"Applying these principles in real-world scenarios allows engineers and researchers to optimize performance and eliminate errors.\n\n"
+                f"### 5. Conclusion & Exam Key Takeaways\n"
+                f"In university examinations, always begin with the standard definition, provide the block diagram, and state all underlying assumptions for maximum marks."
+            )
+        }
+    ]
+
+    flashcards = []
+    for i in range(5):
+        t = terms[i % len(terms)]
+        s = sentences[i % len(sentences)]
+        flashcards.append({
+            "front": f"What is {t}?",
+            "back": s[:120]
+        })
+
+    mcqs = [
+        {
+            "question": f"Which of the following best describes '{terms[0]}' according to the material?",
+            "options": [
+                sentences[0][:80],
+                f"It is solely an unverified theoretical hypothesis.",
+                f"It requires infinite computational resources with zero output.",
+                f"It contradicts standard foundational principles."
+            ],
+            "correct_index": 0,
+            "explanation": f"Correct! As stated in the study material: '{sentences[0]}'."
+        },
+        {
+            "question": f"What primary role does '{terms[1]}' serve in this topic?",
+            "options": [
+                sentences[1 % len(sentences)][:80],
+                "It serves only as a decorative placeholder.",
+                "It disables all error checking and verification routines.",
+                "It prevents any user interaction from taking place."
+            ],
+            "correct_index": 0,
+            "explanation": f"Correct! Based on the syllabus notes: '{sentences[1 % len(sentences)]}'."
+        },
+        {
+            "question": f"When analyzing '{title}', which factor is considered essential?",
+            "options": [
+                sentences[2 % len(sentences)][:80],
+                "Ignoring all boundary constraints.",
+                "Assuming constant zero latency across all media.",
+                "Relying entirely on manual human recalculation."
+            ],
+            "correct_index": 0,
+            "explanation": f"Correct! The study notes highlight that: '{sentences[2 % len(sentences)]}'."
+        },
+        {
+            "question": f"What is the recommended approach for answering exam questions on '{title}'?",
+            "options": [
+                "State core definitions, provide a clear diagram, and cite key governing principles.",
+                "Avoid writing any definitions or technical terms.",
+                "Submit only random numbers without formulas.",
+                "State that the topic cannot be explained."
+            ],
+            "correct_index": 0,
+            "explanation": "Correct! University examiners reward clear structured answers with definitions, diagrams, and principles."
+        }
+    ]
+
+    revision_sheet = [
+        f"⚡ {title}: Focus on the core relationship between {terms[0]} and {terms[1]}.",
+        f"⚡ Key Fact: {sentences[0][:90]}.",
+        f"⚡ Crucial Concept: {sentences[1 % len(sentences)][:90]}.",
+        f"⚡ Examination Tip: Memorize the definitions of {', '.join(terms[:3])}.",
+        f"⚡ Working Principle: {sentences[2 % len(sentences)][:90]}.",
+        f"⚡ Scoring Rule: Draw the block architecture diagram for full marks in Part B/C."
+    ]
+
+    return {
+        "title": title,
+        "subject": title,
+        "complexity": complexity,
+        "source": "adaptify_dynamic_engine",
+        "chapter_summary": chapter_summary,
+        "key_points": key_points,
+        "simple_explanation": simple_explanation,
+        "important_definitions": definitions,
+        "formulas": formulas,
+        "examples": examples,
+        "diagrams": diagrams,
+        "two_mark_qa": two_mark_qa,
+        "five_mark_qa": five_mark_qa,
+        "sixteen_mark_qa": sixteen_mark_qa,
+        "flashcards": flashcards,
+        "mcqs": mcqs,
+        "revision_sheet": revision_sheet
+    }
+
 def generate_study_notes(content: str, title: str = "Study Material", complexity: str = "Exam-focused") -> Dict[str, Any]:
     """
     Generates structured AI study notes for Adaptify AI.
-    Uses Gemini API if configured; otherwise uses high-fidelity contextual tutor engine.
+    Uses Gemini API if configured; otherwise dynamically analyzes uploaded text.
     """
-    subject_key = detect_subject_key(content, title)
-    base_data = KNOWLEDGE_BASE.get(subject_key, KNOWLEDGE_BASE["os"])
-    
-    # Check if Gemini API is available and can generate custom notes
+    # 1. Check if this is one of the built-in sample materials
+    sample_key = is_sample_material(content, title)
+    if sample_key and sample_key in KNOWLEDGE_BASE:
+        notes = dict(KNOWLEDGE_BASE[sample_key])
+        notes["complexity"] = complexity
+        notes["source"] = "adaptify_contextual_engine"
+        if complexity in ["Beginner", "5-Year Old"]:
+            notes["simple_explanation"] = "🌟 Imagine this like your favorite playground! " + notes["simple_explanation"]
+        elif complexity == "Professor Depth":
+            notes["simple_explanation"] = "From a formal axiomatic perspective: " + notes["chapter_summary"]
+        return notes
+
+    # 2. Check if Gemini API is available to generate notes
     if GEMINI_API_KEY:
         try:
             import google.generativeai as genai
@@ -403,19 +677,8 @@ Ensure the output is 100% valid JSON without markdown wrapping.
         except Exception as e:
             print(f"Gemini live notes generation fallback triggered: {e}")
 
-    # High-fidelity contextual fallback engine
-    notes = dict(base_data)
-    notes["title"] = title if title and "Untitled" not in title else base_data["title"]
-    notes["complexity"] = complexity
-    notes["source"] = "adaptify_contextual_engine"
-    
-    # Adapt simple explanation based on complexity level
-    if complexity == "Beginner" or complexity == "5-Year Old":
-        notes["simple_explanation"] = "🌟 Imagine this like your favorite playground! " + notes["simple_explanation"]
-    elif complexity == "Professor Depth":
-        notes["simple_explanation"] = "From a formal axiomatic perspective: " + notes["chapter_summary"]
-        
-    return notes
+    # 3. Dynamic content note generator from the actual uploaded text!
+    return generate_dynamic_notes_from_text(content, title, complexity)
 
 def generate_tutor_response(
     question: str,
@@ -464,7 +727,57 @@ If the student asks for diagrams, provide an ASCII flowchart or structure diagra
         except Exception as e:
             print(f"Gemini chat fallback triggered: {e}")
 
-    # 2. High-fidelity contextual tutor response engine
+    # 2. Check if custom material context was provided
+    is_sample = is_sample_material(context, "")
+    if context and len(context.strip()) > 30 and not is_sample:
+        words = [w.lower() for w in re.findall(r'\b\w{3,}\b', q_lower) if w not in ["what", "how", "why", "when", "where", "explain", "describe", "tell", "this", "that", "with", "from", "the", "and", "give", "show"]]
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', context) if len(s.strip()) > 15]
+        matched = []
+        for s in sentences:
+            s_lower = s.lower()
+            score = sum(1 for w in words if w in s_lower)
+            if score > 0:
+                matched.append((score, s))
+        matched.sort(key=lambda x: x[0], reverse=True)
+        top_sentences = [m[1] for m in matched[:4]] if matched else sentences[:3]
+        explanation_body = "\n\n".join([f"• {s}" for s in top_sentences])
+
+        if language == "Tanglish" or "tanglish" in q_lower:
+            ans = (
+                f"Vanga, unga upload panna notes la irundhu indha question ku simple ah Tanglish la pathuralam! 🚀\n\n"
+                f"**Main Concept Breakdown:**\n{explanation_body}\n\n"
+                f"💡 **Exam Tip**: Exam hall la indha key points ah underline panni ezhudhina full marks confirm pa! Innum details venuma?"
+            )
+        elif language == "Tamil" or "tamil" in q_lower:
+            ans = (
+                f"வணக்கம்! உங்கள் பாடக் குறிப்புகளின் அடிப்படையில் விளக்கம் இதோ: 📚\n\n"
+                f"{explanation_body}\n\n"
+                f"தேர்வில் இந்த முக்கிய கருத்துக்களை தவறாமல் எழுதுங்கள்!"
+            )
+        elif "16-mark" in q_lower or "16 mark" in q_lower or "essay" in q_lower:
+            ans = (
+                f"Here is a comprehensive 16-Mark University Exam-Standard Answer based directly on your uploaded material:\n\n"
+                f"### 1. Introduction & Background\n{top_sentences[0] if top_sentences else 'The topic represents a core domain in the curriculum.'}\n\n"
+                f"### 2. Core Concepts & Principles\n" + "\n".join([f"- **Key Takeaway {i+1}**: {s}" for i, s in enumerate(top_sentences[:4])]) + "\n\n"
+                f"### 3. Detailed Mechanism & Working\n" + explanation_body + "\n\n"
+                f"### 4. Exam Summary & Conclusion\n"
+                f"Mastering these specific definitions and relationships ensures top performance in descriptive exam evaluations."
+            )
+        else:
+            ans = (
+                f"Based on your uploaded material, here is the answer to **'{question}'**:\n\n"
+                f"{explanation_body}\n\n"
+                f"💡 **Key Exam Focus**: Review these points carefully when answering university exam questions on this topic."
+            )
+        return {
+            "answer": ans,
+            "source": "adaptify_contextual_engine",
+            "explanation_level": explanation_level,
+            "language": language,
+            "has_context": True
+        }
+
+    # 3. High-fidelity contextual tutor response engine for sample topics
     # Handle Tanglish requested
     if language == "Tanglish" or "tanglish" in q_lower:
         if subject_key == "quantum":
@@ -614,7 +927,7 @@ def get_adaptive_progress_profile(user_id: str = "demo-user-id") -> Dict[str, An
     """
     return {
         "user_id": user_id,
-        "student_name": "Alex Mercer",
+        "student_name": "Mrittika",
         "academic_level": "Undergraduate Engineering (Year 2)",
         "overall_comprehension": 84,
         "exam_readiness": 89,

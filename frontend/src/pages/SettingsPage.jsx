@@ -13,16 +13,27 @@ import {
   Info
 } from "lucide-react";
 import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function SettingsPage() {
-  const [fullName, setFullName] = useState("Alex Mercer");
-  const [academicLevel, setAcademicLevel] = useState("Undergraduate Engineering (Year 2)");
+  const { user, updateProfile } = useAuth() || {};
+  const [fullName, setFullName] = useState(user?.full_name || "Mrittika");
+  const [academicLevel, setAcademicLevel] = useState(user?.academic_level || "Undergraduate Engineering (Year 2)");
   const [preferredStyle, setPreferredStyle] = useState("Exam-oriented explanation");
   const [preferredLanguage, setPreferredLanguage] = useState("English");
   const [speechRate, setSpeechRate] = useState(1.0);
   const [wisprApiKey, setWisprApiKey] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (user?.full_name) {
+      setFullName(user.full_name);
+    }
+    if (user?.academic_level) {
+      setAcademicLevel(user.academic_level);
+    }
+  }, [user]);
 
   useEffect(() => {
     async function loadWispr() {
@@ -36,6 +47,13 @@ export default function SettingsPage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (updateProfile) {
+      updateProfile({
+        full_name: fullName.trim() || "Mrittika",
+        academic_level: academicLevel,
+        preferred_language: preferredLanguage
+      });
+    }
     if (wisprApiKey && !wisprApiKey.startsWith("••••")) {
       try {
         await api.configureWispr(wisprApiKey);

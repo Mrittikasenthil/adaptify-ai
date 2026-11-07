@@ -40,7 +40,10 @@ function MainApp() {
       const list = await api.getMaterials();
       if (list && list.length > 0) {
         setMaterials(list);
-        if (!selectedMaterialId) {
+        const savedId = localStorage.getItem("adaptify_selected_material_id");
+        if (savedId && list.some((m) => m.id === savedId)) {
+          setSelectedMaterialId(savedId);
+        } else if (!selectedMaterialId) {
           setSelectedMaterialId(list[0].id);
         }
       }
@@ -50,15 +53,25 @@ function MainApp() {
 
   const selectedMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0];
 
+  const handleSelectMaterial = (id) => {
+    setSelectedMaterialId(id);
+    try {
+      localStorage.setItem("adaptify_selected_material_id", id);
+    } catch (e) {}
+  };
+
   const handleUploadSuccess = (newMaterial) => {
-    setMaterials((prev) => [newMaterial, ...prev]);
-    setSelectedMaterialId(newMaterial.id);
+    setMaterials((prev) => [newMaterial, ...prev.filter((m) => m.id !== newMaterial.id)]);
+    handleSelectMaterial(newMaterial.id);
   };
 
   const handleDeleteMaterial = (id) => {
     setMaterials((prev) => prev.filter((m) => m.id !== id));
     if (selectedMaterialId === id && materials.length > 1) {
-      setSelectedMaterialId(materials[0].id);
+      const remaining = materials.filter((m) => m.id !== id);
+      if (remaining.length > 0) {
+        handleSelectMaterial(remaining[0].id);
+      }
     }
   };
 
@@ -114,7 +127,7 @@ function MainApp() {
           onOpenVoiceModal={() => setVoiceModalOpen(true)}
           materials={materials}
           selectedMaterialId={selectedMaterialId}
-          onSelectMaterial={(id) => setSelectedMaterialId(id)}
+          onSelectMaterial={handleSelectMaterial}
         />
 
         {/* View Switcher Banner for Testing Landing Page */}
@@ -138,7 +151,7 @@ function MainApp() {
             <DashboardOverview
               materials={materials}
               selectedMaterial={selectedMaterial}
-              onSelectMaterial={(id) => setSelectedMaterialId(id)}
+              onSelectMaterial={handleSelectMaterial}
               onOpenVoiceModal={() => setVoiceModalOpen(true)}
               onOpenQuizModal={handleOpenQuiz}
               onUploadSuccess={handleUploadSuccess}
@@ -157,7 +170,7 @@ function MainApp() {
             <UploadMaterialsPage
               materials={materials}
               selectedMaterial={selectedMaterial}
-              onSelectMaterial={(id) => setSelectedMaterialId(id)}
+              onSelectMaterial={handleSelectMaterial}
               onUploadSuccess={handleUploadSuccess}
               onDeleteMaterial={handleDeleteMaterial}
               onNavigateNotes={() => setActiveTab("notes")}

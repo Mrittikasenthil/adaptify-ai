@@ -38,12 +38,18 @@ export default function StudyNotesPage({
         if (data) {
           setNotes(data);
         } else {
+          const content = selectedMaterial.extracted_text || selectedMaterial.title;
           const gen = await api.generateNotes(
-            selectedMaterial.extracted_text || selectedMaterial.title,
+            content,
             selectedMaterial.title,
             complexity
           );
-          setNotes(gen);
+          if (gen) {
+            setNotes(gen);
+            try {
+              localStorage.setItem("adaptify_notes_" + selectedMaterial.id, JSON.stringify(gen));
+            } catch (e) {}
+          }
         }
       } catch (err) {
         console.warn("Notes error:", err);

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import AITutorRobot from "../components/AITutorRobot";
 import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function DashboardOverview({
   materials = [],
@@ -39,6 +40,9 @@ export default function DashboardOverview({
   onUploadSuccess,
   onNavigateTab
 }) {
+  const { user } = useAuth() || {};
+  const studentName = user?.full_name || "Mrittika";
+
   // Center Notes State
   const [activeNoteTab, setActiveNoteTab] = useState("key_points");
   const [complexity, setComplexity] = useState("Exam-focused");
@@ -53,7 +57,7 @@ export default function DashboardOverview({
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
-      content: "Hello Alex! I've loaded your study material. Ask me any question, request a 16-mark answer, or click the mic to speak!",
+      content: `Hello ${studentName}! I've loaded your study material. Ask me any question, request a 16-mark answer, or click the mic to speak!`,
       time: "Just now"
     }
   ]);

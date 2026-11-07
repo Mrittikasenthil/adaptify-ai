@@ -30,6 +30,8 @@ export default function UploadMaterialsPage({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState("");
   const [previewMaterial, setPreviewMaterial] = useState(null);
+  const [customTitle, setCustomTitle] = useState("");
+  const [customText, setCustomText] = useState("");
   const fileInputRef = useRef(null);
 
   const handleFileChange = async (e) => {
@@ -57,11 +59,50 @@ export default function UploadMaterialsPage({
           setUploadProgress(0);
           setUploadStage("");
           if (onUploadSuccess) onUploadSuccess(res.material);
+          if (onSelectMaterial) onSelectMaterial(res.material.id);
+          if (onNavigateNotes) onNavigateNotes();
         }, 600);
       } catch (err) {
         alert("Upload error: " + err.message);
         setIsUploading(false);
       }
+    }
+  };
+
+  const handleCustomTextSubmit = async (e) => {
+    e.preventDefault();
+    if (!customText.trim()) return;
+    setIsUploading(true);
+    setUploadProgress(30);
+    setUploadStage("1. Processing custom text notes...");
+
+    const title = customTitle.trim() || "Custom Study Topic";
+    const blob = new Blob([customText.trim()], { type: "text/plain" });
+    const file = new File([blob], `${title.replace(/\s+/g, "_")}.txt`, { type: "text/plain" });
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("file_type_hint", "text");
+
+    try {
+      setTimeout(() => { setUploadProgress(70); setUploadStage("2. Generating 12-part study notes..."); }, 500);
+      const res = await api.uploadMaterial(formData);
+      setUploadProgress(100);
+      setUploadStage("3. Completed!");
+      setCustomText("");
+      setCustomTitle("");
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadStage("");
+        if (onUploadSuccess) onUploadSuccess(res.material);
+        if (onSelectMaterial) onSelectMaterial(res.material.id);
+        if (onNavigateNotes) onNavigateNotes();
+      }, 500);
+    } catch (err) {
+      alert("Error: " + err.message);
+      setIsUploading(false);
     }
   };
 
@@ -91,6 +132,8 @@ export default function UploadMaterialsPage({
         setUploadProgress(0);
         setUploadStage("");
         if (onUploadSuccess) onUploadSuccess(res.material);
+        if (onSelectMaterial) onSelectMaterial(res.material.id);
+        if (onNavigateNotes) onNavigateNotes();
       }, 500);
     } catch (err) {
       alert("YouTube error: " + err.message);
@@ -140,9 +183,9 @@ export default function UploadMaterialsPage({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { id: "pdf", label: "PDF Document", desc: "PDF books, lecture handouts", icon: FileText },
+            { id: "text", label: "Paste Text / Notes", desc: "Direct syllabus / lecture notes", icon: Sparkles },
             { id: "ppt", label: "PPT Presentation", desc: "PowerPoint .pptx, .ppt", icon: Presentation },
-            { id: "video", label: "Video Lecture", desc: "MP4, MOV, YouTube URLs", icon: Video },
-            { id: "image", label: "Diagram / Image", desc: "Handwritten notes, diagrams", icon: FileCode }
+            { id: "video", label: "Video Lecture", desc: "MP4, MOV, YouTube URLs", icon: Video }
           ].map((item) => {
             const Icon = item.icon;
             const isSelected = uploadType === item.id;
@@ -166,30 +209,72 @@ export default function UploadMaterialsPage({
           })}
         </div>
 
-        {/* Drag and Drop Zone */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="p-10 rounded-3xl border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/20 hover:bg-purple-50/40 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-            accept={uploadType === "video" ? "video/*" : uploadType === "ppt" ? ".ppt,.pptx" : uploadType === "pdf" ? ".pdf" : "image/*"}
-          />
-          <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
-            <UploadCloud className="w-7 h-7 animate-bounce" />
+        {/* Direct Text Pasting Form */}
+        {uploadType === "text" ? (
+          <form onSubmit={handleCustomTextSubmit} className="p-6 rounded-3xl bg-purple-50/30 border border-purple-200/70 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Topic / Subject Title
+              </label>
+              <input
+                type="text"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder="e.g. Machine Learning & Neural Networks, DBMS Normalization, Plant Physiology..."
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500/30 bg-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Paste Syllabus, Lecture Notes, or Study Content
+              </label>
+              <textarea
+                rows={7}
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                placeholder="Paste any article, textbook excerpt, questions, formulas, or lecture transcript here. Our AI will automatically generate complete 12-part study notes and an adaptive quiz!"
+                className="w-full text-xs p-3.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500/30 bg-white leading-relaxed resize-y"
+                required
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={!customText.trim() || isUploading}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all disabled:opacity-40"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate Custom Study Notes & Quiz
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Drag and Drop Zone */
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="p-10 rounded-3xl border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/20 hover:bg-purple-50/40 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+              accept={uploadType === "video" ? "video/*" : uploadType === "ppt" ? ".ppt,.pptx" : uploadType === "pdf" ? ".pdf" : "image/*"}
+            />
+            <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
+              <UploadCloud className="w-7 h-7 animate-bounce" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">
+                Drag & drop your {uploadType.toUpperCase()} file here, or click to browse
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Supports real text extraction using <code>pypdf</code>, video speech transcription and presentation parsing.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">
-              Drag & drop your {uploadType.toUpperCase()} file here, or click to browse
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Supports real text extraction using <code>pypdf</code>, video speech transcription and presentation parsing.
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* YouTube input if video selected */}
         {uploadType === "video" && (

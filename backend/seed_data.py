@@ -17,9 +17,9 @@ def seed_initial_data():
         VALUES (?, ?, ?, ?, ?)
         """, (
             demo_user_id,
-            "demo@brandflow.ai",
+            "mrittika@adaptify.ai",
             hash_password("password123"),
-            "Alex Mercer (Demo)",
+            "Mrittika",
             datetime.utcnow().isoformat()
         ))
         

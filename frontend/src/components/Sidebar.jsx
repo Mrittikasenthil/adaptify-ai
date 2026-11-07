@@ -182,14 +182,14 @@ export default function Sidebar({
             className="flex items-center gap-2.5 cursor-pointer group"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-              AM
+              {user?.full_name ? user.full_name.slice(0, 2).toUpperCase() : "M"}
             </div>
             {!isCollapsed && (
               <div>
                 <p className="text-xs font-bold text-slate-800 group-hover:text-purple-600 transition-colors">
-                  Alex Mercer
+                  {user?.full_name || "Mrittika"}
                 </p>
-                <p className="text-[10px] text-slate-400">Year 2 Engineering</p>
+                <p className="text-[10px] text-slate-400">{user?.academic_level || "Year 2 Engineering"}</p>
               </div>
             )}
           </div>
